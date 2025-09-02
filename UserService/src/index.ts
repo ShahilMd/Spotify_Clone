@@ -21,7 +21,7 @@ const connectDB = async () => {
 }
 
 dotenv.config({
-  path: '../.env'
+  path: './.env'
 })
 
 const app = express();
