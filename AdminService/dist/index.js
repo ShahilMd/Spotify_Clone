@@ -18,7 +18,7 @@ async function initDB() {
         await sql `
     CREATE TABLE IF NOT EXISTS albums (
       id SERIAL PRIMARY KEY,
-      title VARCHAR(255) NOT NULL,
+      title VARCHAR(255) NOT NULL UNIQUE,
       discription VARCHAR(255) NOT NULL,
       thumbnail VARCHAR(255) NOT NULL,
       create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

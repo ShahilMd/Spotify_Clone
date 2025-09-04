@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import multer from 'multer';
 interface IUser {
     _id: string;
     name: string;
@@ -12,5 +13,6 @@ interface AuthenticatedRequest extends Request {
 }
 export declare const isAuth: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>;
 declare const uploadFile: import("express").RequestHandler<import("express-serve-static-core").ParamsDictionary, any, any, import("qs").ParsedQs, Record<string, any>>;
-export default uploadFile;
+declare const uploadMultiple: multer.Multer;
+export { uploadFile, uploadMultiple };
 //# sourceMappingURL=middleware.d.ts.map

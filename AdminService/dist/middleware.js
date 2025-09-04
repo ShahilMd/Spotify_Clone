@@ -18,7 +18,7 @@ export const isAuth = async (req, res, next) => {
                 token
             }
         });
-        req.user = data;
+        req.user = data.user;
         next();
     }
     catch (error) {
@@ -31,5 +31,6 @@ export const isAuth = async (req, res, next) => {
 //multer setup
 const storage = multer.memoryStorage();
 const uploadFile = multer({ storage }).single('file');
-export default uploadFile;
+const uploadMultiple = multer({ storage: multer.memoryStorage() });
+export { uploadFile, uploadMultiple };
 //# sourceMappingURL=middleware.js.map

@@ -40,7 +40,7 @@ export const isAuth = async(req:AuthenticatedRequest , res:Response, next:NextFu
       }
     })
 
-    req.user = data;
+    req.user = data.user;
     next();
 
   } catch (error) {
@@ -56,4 +56,6 @@ const storage = multer.memoryStorage();
 
 const uploadFile = multer({storage}).single('file');
 
-export default uploadFile;
+const uploadMultiple = multer({ storage: multer.memoryStorage() });
+
+export {  uploadFile , uploadMultiple};
