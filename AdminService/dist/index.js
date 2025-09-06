@@ -29,9 +29,15 @@ async function initDB() {
       title VARCHAR(255) NOT NULL,
       discription VARCHAR(255) NOT NULL,
       thumbnail VARCHAR(255),
-      audio VARCHAR(255) NOT NULL,
-      album_id INTEGER REFERENCES albums(id) ON DELETE CASCADE,
+      audio VARCHAR(255) NOT NULL UNIQUE,
+      -- album_id INTEGER REFERENCES albums(id) ON DELETE CASCADE,
       create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`;
+        // -- junction table to connect songs ↔ albums
+        await sql `CREATE TABLE IF NOT EXISTS album_songs (
+      album_id INT REFERENCES albums(id) ON DELETE CASCADE,
+      song_id INT REFERENCES songs(id) ON DELETE CASCADE,
+      PRIMARY KEY (album_id, song_id)
     )`;
         console.log("Database Initialize successfully");
     }
