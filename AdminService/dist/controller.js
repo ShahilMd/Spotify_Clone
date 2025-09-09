@@ -171,7 +171,7 @@ export const addSong = TryCatch(async (req, res) => {
   `;
     if (redisClient.isReady) {
         await redisClient.del('songs');
-        console.log("cache clear for albums");
+        console.log("cache clear for songs");
     }
     res.json({
         message: "Song added",
@@ -344,7 +344,7 @@ export const addSongs = TryCatch(async (req, res) => {
             400;
     if (redisClient.isReady) {
         await redisClient.del('songs');
-        console.log("cache clear for albums");
+        console.log("cache clear for songs");
     }
     res.status(statusCode).json(response);
 });
@@ -409,8 +409,12 @@ export const deleteAlbum = TryCatch(async (req, res) => {
     }
     await sql `DELETE FROM albums WHERE id = ${id}`;
     if (redisClient.isReady) {
-        await redisClient.del(`album`);
+        await redisClient.del(`albums`);
         console.log("cache clear for albums");
+    }
+    if (redisClient.isReady) {
+        await redisClient.del(`songs`);
+        console.log("cache clear for songs");
     }
     res.json({
         message: "Album deleted successfully"
@@ -432,6 +436,10 @@ export const deleteSong = TryCatch(async (req, res) => {
         return;
     }
     await sql `DELETE FROM songs WHERE id = ${id}`;
+    if (redisClient.isReady) {
+        await redisClient.del(`albums`);
+        console.log("cache clear for albums");
+    }
     if (redisClient.isReady) {
         await redisClient.del(`songs`);
         console.log("cache clear for songs");
