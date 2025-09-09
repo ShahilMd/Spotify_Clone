@@ -473,6 +473,11 @@ export const addThumbnail = TryCatch(async(req:AuthenticatedRequest , res) => {
   UPDATE songs SET thumbnail = ${cloud.secure_url} WHERE id = ${id} RETURNING *
   `;
 
+  if(redisClient.isReady){
+    await redisClient.del('songs');
+    console.log("cache clear for songs");
+  }
+
   res.json({
     message:"Thumbnail updated",
     song: result[0]
@@ -502,7 +507,44 @@ export const deleteAlbum = TryCatch(async(req:AuthenticatedRequest , res) => {
 
   await sql`DELETE FROM albums WHERE id = ${id}`;
 
+  if(redisClient.isReady){
+    await redisClient.del(`album`);
+    console.log("cache clear for albums");
+  }
+
   res.json({
     message:"Album deleted successfully"
+  });
+})
+
+export const deleteSong = TryCatch(async(req:AuthenticatedRequest , res) => {
+
+  if(req.user?.role !== 'admin'){
+    res.status(401).json({
+      message:"Unauthorized acess"
+    })
+    return;
+  }
+
+  let {id} = req.params
+
+  const isExist = await sql`SELECT * FROM songs WHERE id = ${id}`;
+
+  if(isExist.length === 0){
+    res.status(400).json({
+      message:`No song found with id ${id}`
+    })
+    return;
+  }
+
+  await sql`DELETE FROM songs WHERE id = ${id}`;
+
+  if(redisClient.isReady){
+    await redisClient.del(`songs`);
+    console.log("cache clear for songs");
+  }
+
+  res.json({
+    message:"Songs deleted successfully"
   });
 })
