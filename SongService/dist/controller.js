@@ -1,17 +1,49 @@
 import { sql } from "./config/db.js";
+import { redisClient } from "./index.js";
 import TryCatch from "./TryCatch.js";
 export const getAllAlbums = TryCatch(async (req, res) => {
-    const albums = await sql `
-  SELECT * FROM albums
-  `;
-    res.json(albums);
+    let albums;
+    const cache_Expiry = 3600;
+    if (redisClient.isReady) {
+        albums = await redisClient.get('albums');
+    }
+    if (albums) {
+        console.log("from redis");
+        res.json(JSON.parse(albums));
+        return;
+    }
+    else {
+        console.log("from db");
+        albums = await sql `SELECT * FROM albums`;
+        await redisClient.set('albums', JSON.stringify(albums), { EX: cache_Expiry });
+        res.json(albums);
+        return;
+    }
 });
 export const getAllSongs = TryCatch(async (req, res) => {
-    const songs = await sql `SELECT * FROM songs`;
-    res.json(songs);
+    let songs;
+    const cache_Expiry = 3600;
+    if (redisClient.isReady) {
+        songs = await redisClient.get('songs');
+    }
+    if (songs) {
+        console.log('from redis');
+        res.json(JSON.parse(songs));
+        return;
+    }
+    else {
+        console.log('from db');
+        songs = await sql `SELECT * FROM songs`;
+        await redisClient.set('songs', JSON.stringify(songs), { EX: cache_Expiry });
+        res.json(songs);
+        return;
+    }
 });
 export const getAllSongsByAlbum = TryCatch(async (req, res) => {
     const { id } = req.params;
+    const cache_Expiry = 3600;
+    let album;
+    let songsData;
     // Validate album ID
     if (!id || isNaN(parseInt(id))) {
         return res.status(400).json({
@@ -19,20 +51,33 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
         });
     }
     const albumId = parseInt(id);
-    try {
-        // Check if album exists and get album details
-        const album = await sql `
-      SELECT id, title, discription, thumbnail, create_at 
-      FROM albums 
-      WHERE id = ${albumId}
-    `;
+    // check if album is exist in redis or not
+    const cachedAlbum = await redisClient.get(`album:${albumId}`);
+    if (cachedAlbum) {
+        album = JSON.parse(cachedAlbum);
+    }
+    else {
+        // check album is exist in db or not
+        album = await sql `
+    SELECT id, title, discription, thumbnail, create_at 
+    FROM albums 
+    WHERE id = ${albumId}`;
         if (album.length === 0) {
             return res.status(404).json({
                 message: `Album with ID ${albumId} not found`
             });
         }
-        // Fetch all songs for the album with album information
-        const songsData = await sql `
+        ;
+        // cached album in redis
+        await redisClient.set(`album:${albumId}`, JSON.stringify(album), { EX: cache_Expiry });
+    }
+    // Fetch sall songs for the album with album information 
+    const cachedSongs = await redisClient.get(`songs:${albumId}`);
+    if (cachedSongs) {
+        songsData = JSON.parse(cachedSongs);
+    }
+    else {
+        songsData = await sql `
       SELECT 
         s.id,
         s.title,
@@ -50,6 +95,10 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
       WHERE a.id = ${albumId}
       ORDER BY s.create_at ASC
     `;
+        // Cache songs in Redis
+        await redisClient.set(`songs:${albumId}`, JSON.stringify(songsData), { EX: cache_Expiry });
+    }
+    try {
         // Format the response
         const response = {
             album: {
@@ -60,7 +109,7 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
                 created_at: album[0]?.create_at,
                 total_songs: songsData.length
             },
-            songs: songsData.map(song => ({
+            songs: songsData.map((song) => ({
                 id: song.id,
                 title: song.title,
                 description: song.discription,
@@ -85,9 +134,16 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
 });
 export const getSingleSong = TryCatch(async (req, res) => {
     const { id } = req.params;
-    const song = await sql `
+    let song;
+    song = await sql `
   SELECT * FROM songs WHERE id = ${id}
   `;
+    if (song.length === 0) {
+        return res.status(404).json({
+            message: `No song found with id ${id}`
+        });
+    }
     res.json(song);
+    return;
 });
 //# sourceMappingURL=controller.js.map

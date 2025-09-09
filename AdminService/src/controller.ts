@@ -32,7 +32,7 @@ export const addAlbum = TryCatch(async(req:AuthenticatedRequest, res) => {
     SELECT * FROM albums WHERE title = ${title}
     `;
 
-    if(isExist){
+    if(isExist.length > 0){
       res.status(400).json({
         message:"Album already exists"
       })
