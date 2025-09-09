@@ -2,6 +2,7 @@ import getBuffer from "./config/dataUri.js";
 import TryCatch from "./TryCatch.js";
 import cloudinary from "cloudinary";
 import { sql } from "./config/db.js";
+import { redisClient } from "./index.js";
 export const addAlbum = TryCatch(async (req, res) => {
     if (req.user?.role !== "admin") {
         res.status(401).json({
@@ -45,10 +46,15 @@ export const addAlbum = TryCatch(async (req, res) => {
     const result = await sql `
     INSERT INTO albums(title,discription,thumbnail) VALUES(${title},${discription},${cloud.secure_url}) RETURNING *
     `;
+    if (redisClient.isReady) {
+        await redisClient.del('albums');
+        console.log("cache clear for albums");
+    }
     res.json({
         message: "Album created successfully",
         album: result[0]
     });
+    return;
 });
 export const addAlbums = TryCatch(async (req, res) => {
     if (req.user?.role !== 'admin') {
@@ -100,6 +106,10 @@ export const addAlbums = TryCatch(async (req, res) => {
     INSERT INTO albums(title , discription ,thumbnail) VALUES (${title},${discription} , ${cloud.secure_url} )RETURNING *
     `;
         createAlbums.push(result[0]);
+    }
+    if (redisClient.isReady) {
+        await redisClient.del('albums');
+        console.log("cache clear for albums");
     }
     res.json({
         message: 'Albums Added',
@@ -159,6 +169,10 @@ export const addSong = TryCatch(async (req, res) => {
   VALUES (${album_id}, ${song?.[0]?.id})
   ON CONFLICT DO NOTHING
   `;
+    if (redisClient.isReady) {
+        await redisClient.del('songs');
+        console.log("cache clear for albums");
+    }
     res.json({
         message: "Song added",
         song: song[0]
@@ -328,6 +342,10 @@ export const addSongs = TryCatch(async (req, res) => {
     const statusCode = processedSongs.length > 0 ? 200 :
         errors.length > 0 ? 207 : // Multi-status for partial success
             400;
+    if (redisClient.isReady) {
+        await redisClient.del('songs');
+        console.log("cache clear for albums");
+    }
     res.status(statusCode).json(response);
 });
 export const addThumbnail = TryCatch(async (req, res) => {

@@ -3,7 +3,7 @@ import TryCatch from "./TryCatch.js";
 import type { Request } from "express";
 import cloudinary from "cloudinary";
 import { sql } from "./config/db.js";
-import type { Multer } from "multer";
+import { redisClient } from "./index.js";
 
 interface AuthenticatedRequest extends Request {
   user?:{
@@ -65,10 +65,18 @@ export const addAlbum = TryCatch(async(req:AuthenticatedRequest, res) => {
     INSERT INTO albums(title,discription,thumbnail) VALUES(${title},${discription},${cloud.secure_url}) RETURNING *
     `;
 
+    if(redisClient.isReady){
+      await redisClient.del('albums');
+      console.log("cache clear for albums");
+      
+    }
+
     res.json({
       message:"Album created successfully",
       album:result[0]
     })
+
+    return;
 })
 
 export const addAlbums = TryCatch(async(req:AuthenticatedRequest, res) => {
@@ -135,6 +143,11 @@ export const addAlbums = TryCatch(async(req:AuthenticatedRequest, res) => {
     createAlbums.push(result[0])
   }
 
+      if(redisClient.isReady){
+      await redisClient.del('albums');
+      console.log("cache clear for albums");
+      
+    }
   res.json({
     message:'Albums Added',
     createAlbums,
@@ -206,6 +219,11 @@ export const addSong =  TryCatch(async(req:AuthenticatedRequest, res) => {
   ON CONFLICT DO NOTHING
   `;
   
+  if(redisClient.isReady){
+      await redisClient.del('songs');
+      console.log("cache clear for albums");
+      
+    }
   res.json({
     message:"Song added",
     song:song[0]
@@ -401,6 +419,12 @@ export const addSongs = TryCatch(async (req: AuthenticatedRequest, res) => {
   const statusCode = processedSongs.length > 0 ? 200 : 
                     errors.length > 0 ? 207 : // Multi-status for partial success
                     400;
+                    
+    if(redisClient.isReady){
+      await redisClient.del('songs');
+      console.log("cache clear for albums");
+      
+    }
 
   res.status(statusCode).json(response);
 });
