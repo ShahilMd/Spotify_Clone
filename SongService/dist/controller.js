@@ -86,6 +86,7 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
         s.discription,
         s.thumbnail,
         s.audio,
+        s.duration,
         s.create_at,
         a.id as album_id,
         a.title as album_title,
@@ -124,6 +125,7 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
                 discription: song.discription,
                 thumbnail: song.thumbnail,
                 audio: song.audio,
+                duration: song.duration,
                 created_at: song.create_at,
             })),
         };

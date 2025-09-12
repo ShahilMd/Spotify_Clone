@@ -5,5 +5,6 @@ export declare const registerUser: (req: Request, res: Response, next: e.NextFun
 export declare const loginUser: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
 export declare const myProfile: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
 export declare const addToPlaylist: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
+export declare const removeFromPlaylist: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
 export declare const myPlaylist: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
 //# sourceMappingURL=controller.d.ts.map

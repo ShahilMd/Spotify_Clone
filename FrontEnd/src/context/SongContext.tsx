@@ -10,6 +10,7 @@ export  interface  Song{
     discription:string;
     audio:string;
     thumbnail:string;
+    duration:number;
 }
 export  interface  Album{
     id: string;
@@ -34,6 +35,8 @@ export interface SongContextType{
     albumData:Album | null;
     fetchAlbumSong:(id:string) => Promise<void>;
     songInPlaylist:Song[];
+    filter:string;
+    setFilter:(data:string)=>void;
 }
 
 const  SongContext = createContext<SongContextType | undefined>(undefined)
@@ -50,6 +53,7 @@ export  const SongProvider:React.FC<SongProviderProps> = ({children}) => {
   const [isplaying, setIsplaying] = useState<boolean>(false);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [playlist, setPlaylist] = useState<Song[]>([]);
+  const [filter, setFilter] = useState<string>('');
 
 
     const fetchSongs = useCallback(async () => {
@@ -142,7 +146,7 @@ export  const SongProvider:React.FC<SongProviderProps> = ({children}) => {
     const fetchAlbumSong = useCallback(async  (id:string) => {
         setLoading(true)
         try {
-            const {data} = await  axios.get<{data:any,songs:Song[]; album:Album}>(`${server}/api/v1/album/${id}`)
+            const {data} = await  axios.get<{data:{album:Album,songs:Song[]},songs:Song[]; album:Album}>(`${server}/api/v1/album/${id}`)
 
             setAlbumData(data.album)
             setAlbumSong(data.songs)
@@ -162,11 +166,12 @@ export  const SongProvider:React.FC<SongProviderProps> = ({children}) => {
         fetchAlbums()
     }, []);
     return(
-      <SongContext.Provider value={{songs , loading  ,isplaying , setIsplaying , selectedSong, setSelectedSong, albums, fetchSingleSong, song, prevSong , nextSong, albumSong , albumData , fetchAlbumSong, songInPlaylist}}>
+      <SongContext.Provider value={{songs , loading  ,isplaying , setIsplaying , selectedSong, setSelectedSong, albums, fetchSingleSong, song, prevSong , nextSong, albumSong , albumData , fetchAlbumSong, songInPlaylist , filter , setFilter}}>
           {children}
       </SongContext.Provider>
   )
 }
+
 
 export  const useSongData = () => {
     const context = useContext(SongContext);

@@ -1,110 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import type { Song } from "../context/SongContext";
-import { FaBookmark, FaPlay, FaPause, FaSearch, FaTrash, FaClock, FaMusic } from 'react-icons/fa';
+import { useSongData, type Song } from "../context/SongContext";
+import {  FaPlay, FaPause, FaSearch, FaTrash, FaClock, FaMusic } from 'react-icons/fa';
 import axios from "axios";
+import { useUserData } from '../context/UserContext';
 
 const MyPlaylistPage = () => {
     const [songs, setSongs] = useState<Song[]>([]);
-
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
-    const [filteredSongs, setFilteredSongs] = useState(songs);
     const [loading, setLoading] = useState(true);
 
+    const {setSelectedSong , setIsplaying ,selectedSong, isplaying} = useSongData();
+    const {removeFromPlaylist} = useUserData();
+
+
+
+
+
+    const fetchPlaylist = async () => {
+        try {
+            const { data } = await axios.get<Song[]>(
+                `http://localhost:4000/api/v1/user/myplaylist`,
+                {
+                    headers:{
+                        token:localStorage.getItem("token")
+                    }
+                }
+            );
+            setSongs(data);
+
+        } catch (error) {
+            console.error("Error fetching playlist:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchPlaylist = async () => {
-            try {
-                const { data } = await axios.get<Song[]>(
-                    `http://localhost:4000/api/v1/user/myplaylist`,
-                    {
-                        headers:{
-                        token:localStorage.getItem("token")
-                        }
-                    }
-                );
-                setSongs(data);
-            } catch (error) {
-                console.error("Error fetching playlist:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchPlaylist();
-    }, []); // The empty dependency array is crucial here
+    }, []);// The empty dependency array is crucial here
 
+    const handleRemoveFromPlaylist = async (songId: string) => {
+        await removeFromPlaylist(songId);
+        fetchPlaylist();
+    };
 
-    console.log(songs)
-    console.log(filteredSongs)
-    // useEffect(() => {
-    //     const filtered = songs.filter(song =>
-    //         song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //         song.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //         song.album.toLowerCase().includes(searchTerm.toLowerCase())
-    //     );
-    //     setFilteredSongs(filtered);
-    // }, [searchTerm, songs]);
-    //
-    // const formatDuration = (seconds = 180) => {
-    //     const mins = Math.floor(seconds / 60);
-    //     const secs = seconds % 60;
-    //     return `${mins}:${secs.toString().padStart(2, '0')}`;
-    // };
-
-    // const togglePlay = (songId) => {
-    //     if (currentlyPlaying === songId) {
-    //         setCurrentlyPlaying(null);
-    //     } else {
-    //         setCurrentlyPlaying(songId);
-    //     }
-    //
-    //     setSongs(prevSongs =>
-    //         prevSongs.map(song => ({
-    //             ...song,
-    //             isPlaying: song.id === songId ? !song.isPlaying : false
-    //         }))
-    //     );
-    // };
-
-    // const removeSong = (songId) => {
-    //     setSongs(prevSongs => prevSongs.filter(song => song.id !== songId));
-    //     if (currentlyPlaying === songId) {
-    //         setCurrentlyPlaying(null);
-    //     }
-    // };
-
-    // const formatDate = (dateString) => {
-    //     return new Date(dateString).toLocaleDateString('en-US', {
-    //         month: 'short',
-    //         day: 'numeric',
-    //         year: 'numeric'
-    //     });
-    // };
-
-    // const getTotalDuration = () => {
-    //     const totalSeconds = songs.reduce((total, song) => total + song.duration, 0);
-    //     const hours = Math.floor(totalSeconds / 3600);
-    //     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    //
-    //     if (hours > 0) {
-    //         return `${hours}h ${minutes}m`;
-    //     }
-    //     return `${minutes}m`;
-    // };
-
-    // const playAllSongs = (e) => {
-    //     e.stopPropagation();
-    //     if (songs.length > 0) {
-    //         setCurrentlyPlaying(songs[0].id);
-    //         setSongs(prevSongs =>
-    //             prevSongs.map((song, index) => ({
-    //                 ...song,
-    //                 isPlaying: index === 0
-    //             }))
-    //         );
-    //     }
-    // };
+    const formatDuration = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+    const playSong = (e:React.MouseEvent) => {
+        e.stopPropagation();
+        setIsplaying(true);
+        setSelectedSong(songs[0].id.toString());
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-black text-white">
@@ -154,13 +103,10 @@ const MyPlaylistPage = () => {
                 {/* Action Buttons */}
                 <div className="flex items-center gap-6 mb-8 px-2">
                     <button
-
+                        onClick={playSong}
                         className="flex items-center justify-center w-16 h-16 bg-green-500 hover:bg-green-400 rounded-full shadow-lg hover:shadow-green-500/25 transition-all duration-300 hover:scale-110 group"
                     >
                         <FaPlay className="text-black text-lg ml-1 group-hover:scale-110 transition-transform duration-200" />
-                    </button>
-                    <button className="flex items-center justify-center w-12 h-12 border-2 border-white/20 hover:border-white/40 rounded-full transition-all duration-300 hover:scale-110 group">
-                        <FaBookmark className="text-white/70 group-hover:text-white transition-colors duration-200" />
                     </button>
                 </div>
 
@@ -194,7 +140,7 @@ const MyPlaylistPage = () => {
                     <div className="divide-y divide-white/5">
                         {songs.length > 0 ? (
                             songs.map((song, index) => {
-                                const isCurrentSong = false
+                                const isCurrentSong = selectedSong === song.id && isplaying;
                                 return (
                                     <div
                                         className="group grid grid-cols-[16px_1fr_1fr_60px] gap-4 px-6 py-4 hover:bg-white/5 transition-all duration-200 cursor-pointer items-center"
@@ -214,11 +160,16 @@ const MyPlaylistPage = () => {
                         </span>
                                             )}
                                             <button
+                                            onClick={() =>{
+                                                setSelectedSong(song.id);
+                                                setIsplaying(!isplaying);
+                                            }
+                                            }
                                                 className="hidden group-hover:block text-white hover:scale-110 transition-transform duration-200"
 
                                             >
 
-                                                    <FaPlay className="w-4 h-4" />
+                                                    {isplaying ? <FaPause className="w-4 h-4" /> : <FaPlay className="w-4 h-4" />}
                                             </button>
                                         </div>
 
@@ -243,7 +194,7 @@ const MyPlaylistPage = () => {
                                                     {song.title}
                                                 </p>
                                                 <p className="text-sm text-white/50 truncate">
-                                                    ..
+                                                    ...
                                                 </p>
                                             </div>
                                         </div>
@@ -258,11 +209,14 @@ const MyPlaylistPage = () => {
                                         {/* Actions & Duration */}
                                         <div className="flex items-center justify-center gap-3">
                                             <button
+                                            onClick={()=>handleRemoveFromPlaylist(song.id)}
+
                                                 className="opacity-0 group-hover:opacity-100 text-white/60 hover:text-red-400 transition-all duration-200 hover:scale-110"
                                             >
                                                 <FaTrash className="w-4 h-4" />
                                             </button>
                                             <span className="text-white/50 text-sm font-medium min-w-[35px] text-center">
+                        {formatDuration(Math.floor(song.duration))}
                       </span>
                                         </div>
                                     </div>

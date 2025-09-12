@@ -158,8 +158,8 @@ export const addSong = TryCatch(async (req, res) => {
     if (song.length === 0) {
         // Insert new song
         const inserted = await sql `
-      INSERT INTO songs (title, discription, audio) 
-      VALUES (${title}, ${discription}, ${cloud.secure_url})
+      INSERT INTO songs (title, discription, audio, duration) 
+      VALUES (${title}, ${discription}, ${cloud.secure_url}, ${cloud.duration})
       RETURNING *
     `;
         song = inserted;
@@ -298,8 +298,8 @@ export const addSongs = TryCatch(async (req, res) => {
             else {
                 // Create new song record
                 const newSong = await sql `
-          INSERT INTO songs (title, discription, audio) 
-          VALUES (${title.trim()}, ${discription.trim()}, ${cloudResult.secure_url})
+          INSERT INTO songs (title, discription, audio, duration) 
+          VALUES (${title.trim()}, ${discription.trim()}, ${cloudResult.secure_url}, ${cloudResult.duration})
           RETURNING *
         `;
                 songRecord = newSong[0];

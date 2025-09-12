@@ -20,7 +20,8 @@ interface UserContextType{
     registerUser: (name:string,email:string,password:string,navigate:(path:string)=>void) => Promise<void>,
     addToPlaylist: (id:string) => Promise<void>,
     logoutUser: () => Promise<void>
-    fetchUser: () => Promise<void>
+    fetchUser: () => Promise<User | undefined>
+    removeFromPlaylist: (id:string) => Promise<void>
 
 }
 
@@ -119,13 +120,31 @@ export const UserProvider:React.FC<UserProviderProps> = ({children}) => {
             console.error(error);
             toast.error(error?.response?.data?.message || 'An error occurred')
         }
+    }
+
+    async function removeFromPlaylist(id:string){
+        try {
+          const data = await axios.delete(`${server}/api/v1/song/remove/${id}`,{
+            headers:{
+                token: localStorage.getItem('token')
+            },
+         })
+
+         toast.success(data.data.message)
+         await fetchUser()
+        } catch (error:any) {
+            console.error(error);
+            toast.error(error?.response?.data?.message || 'An error occurred')
+        }
 
     }
+
+
     useEffect( () => {
          fetchUser()
     }, []);
 
-    return <UserContext.Provider value={{user , loading ,fetchUser, isAuth,btnLoading,loginUser,registerUser,logoutUser,addToPlaylist }}>{children}</UserContext.Provider>
+    return <UserContext.Provider value={{user , loading,fetchUser,removeFromPlaylist, isAuth,btnLoading,loginUser,registerUser,logoutUser,addToPlaylist }}>{children}</UserContext.Provider>
 }
 
 export const useUserData = ():UserContextType => {

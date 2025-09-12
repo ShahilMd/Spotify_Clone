@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { useUserData } from "../context/UserContext";
 import { FaChevronLeft, FaChevronRight, FaCrown, FaDownload, FaUser, FaSignOutAlt, FaSignInAlt } from "react-icons/fa";
-import { useState } from "react";
+import {useEffect, useState} from "react";
+import {useSongData} from "../context/SongContext.tsx";
 
 const Navbar = () => {
     const navigate = useNavigate();
     const { isAuth, logoutUser } = useUserData();
+    const {filter , setFilter} = useSongData()
     const [activeFilter, setActiveFilter] = useState('all');
 
     const logoutUserHandler = () => {
@@ -13,10 +15,11 @@ const Navbar = () => {
     };
 
     const filterCategories = [
-        { id: 'all', label: 'All', path: null },
-        { id: 'music', label: 'Music', path: null },
-        { id: 'podcasts', label: 'Podcasts', path: null },
+        { id: 'all', label: 'All', path: '/' },
+        { id: 'music', label: 'Music', path: '/music' },
+        { id: 'podcasts', label: 'Podcasts', path: '/podcasts' },
     ];
+
 
     const handleFilterClick = (filter: any) => {
         setActiveFilter(filter.id);
@@ -24,6 +27,10 @@ const Navbar = () => {
             navigate(filter.path);
         }
     };
+    useEffect(() => {
+        handleFilterClick(filterCategories)
+        
+    }, [filterCategories]);
 
     return (
         <div className="w-full space-y-6">
@@ -53,20 +60,10 @@ const Navbar = () => {
                         Explore Premium
                     </button>
 
-                    {/* Install App Button */}
-                    <button className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/30 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:scale-105 group">
-                        <FaDownload className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
-                        Install App
-                    </button>
 
                     {/* User Authentication */}
                     {isAuth ? (
                         <div className="flex items-center gap-3">
-                            {/* User Avatar */}
-                            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-                                <FaUser className="w-5 h-5 text-white" />
-                            </div>
-
                             {/* Logout Button */}
                             <button
                                 onClick={logoutUserHandler}

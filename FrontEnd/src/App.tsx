@@ -8,6 +8,7 @@ import { useUserData } from "./context/UserContext.tsx";
 import Loading from "./Components/Loding.tsx";
 import Layout from "./Components/Layout.tsx";
 import MyPlaylist from "./pages/MyPlaylist.tsx";
+import Music from "./pages/Music.tsx";
 
 const App = () => {
     const { isAuth, loading } = useUserData();
@@ -29,6 +30,7 @@ const App = () => {
                         {/*    element={isAuth ? <Admin /> : <Login />}*/}
                         {/*/>*/}
                         <Route path="/login" element={isAuth ? <Home /> : <Login />} />
+                        <Route path="/music" element={isAuth ? <Music/> : <Login />} />
                         <Route
                             path="/register"
                             element={isAuth ? <Home /> : <Register />}

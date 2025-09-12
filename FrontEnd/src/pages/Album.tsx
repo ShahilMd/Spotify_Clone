@@ -28,7 +28,7 @@ const Album = () => {
         }
     }, [params.id]);
 
-    const formatDuration = (seconds: number = 180) => {
+    const formatDuration = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -192,7 +192,7 @@ const Album = () => {
                                                                 </button>
                                                             )}
                                                             <span className="text-white/50 text-sm font-medium min-w-[35px] text-center">
-                                                                {formatDuration()}
+                                                                {formatDuration(Math.floor(song.duration))}
                                                             </span>
                                                         </div>
                                                     </div>

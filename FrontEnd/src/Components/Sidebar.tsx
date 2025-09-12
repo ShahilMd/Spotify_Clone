@@ -80,9 +80,6 @@ const Sidebar = () => {
                             <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-200 group">
                                 <FaChevronRight className="w-4 h-4 text-white/70 group-hover:text-white transition-colors duration-200" />
                             </button>
-                            <button className="p-2 rounded-lg bg-white/5 hover:bg-green-500/20 hover:text-green-400 transition-all duration-200 group">
-                                <FaPlus className="w-4 h-4 text-white/70 group-hover:text-green-400 group-hover:scale-110 transition-all duration-200" />
-                            </button>
                         </div>
                     </div>
 
