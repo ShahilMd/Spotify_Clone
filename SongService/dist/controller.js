@@ -44,41 +44,43 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
     const cache_Expiry = 3600;
     let album;
     let songsData;
-    // Validate album ID
     if (!id || isNaN(parseInt(id))) {
         return res.status(400).json({
-            message: "Invalid album ID provided"
+            message: "Invalid album ID provided",
         });
     }
     const albumId = parseInt(id);
-    // check if album is exist in redis or not
-    const cachedAlbum = await redisClient.get(`album:${albumId}`);
-    if (cachedAlbum) {
-        album = JSON.parse(cachedAlbum);
+    if (redisClient.isReady) {
+        const cachedAlbum = await redisClient.get(`album:${albumId}`);
+        if (cachedAlbum) {
+            album = JSON.parse(cachedAlbum);
+        }
     }
-    else {
-        // check album is exist in db or not
+    if (!album) {
         album = await sql `
-    SELECT id, title, discription, thumbnail, create_at 
-    FROM albums 
-    WHERE id = ${albumId}`;
+            SELECT id, title, discription, thumbnail, create_at
+            FROM albums
+            WHERE id = ${albumId}`;
         if (album.length === 0) {
             return res.status(404).json({
-                message: `Album with ID ${albumId} not found`
+                message: `Album with ID ${albumId} not found`,
             });
         }
-        ;
-        // cached album in redis
-        await redisClient.set(`album:${albumId}`, JSON.stringify(album), { EX: cache_Expiry });
+        if (redisClient.isReady) {
+            await redisClient.set(`album:${albumId}`, JSON.stringify(album), {
+                EX: cache_Expiry,
+            });
+        }
     }
-    // Fetch sall songs for the album with album information 
-    const cachedSongs = await redisClient.get(`songs:${albumId}`);
-    if (cachedSongs) {
-        songsData = JSON.parse(cachedSongs);
+    if (redisClient.isReady) {
+        const cachedSongs = await redisClient.get(`songs:${albumId}`);
+        if (cachedSongs) {
+            songsData = JSON.parse(cachedSongs);
+        }
     }
-    else {
+    if (!songsData) {
         songsData = await sql `
-      SELECT 
+      SELECT
         s.id,
         s.title,
         s.discription,
@@ -95,40 +97,47 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
       WHERE a.id = ${albumId}
       ORDER BY s.create_at ASC
     `;
-        // Cache songs in Redis
-        await redisClient.set(`songs:${albumId}`, JSON.stringify(songsData), { EX: cache_Expiry });
+        if (redisClient.isReady) {
+            await redisClient.set(`songs:${albumId}`, JSON.stringify(songsData), {
+                EX: cache_Expiry,
+            });
+        }
     }
     try {
-        // Format the response
+        if (!album || album.length === 0 || !songsData) {
+            return res.status(404).json({
+                message: "Album or songs not found."
+            });
+        }
         const response = {
             album: {
                 id: album[0]?.id,
                 title: album[0]?.title,
-                description: album[0]?.discription,
+                discription: album[0]?.discription,
                 thumbnail: album[0]?.thumbnail,
                 created_at: album[0]?.create_at,
-                total_songs: songsData.length
+                total_songs: songsData.length,
             },
             songs: songsData.map((song) => ({
                 id: song.id,
                 title: song.title,
-                description: song.discription,
+                discription: song.discription,
                 thumbnail: song.thumbnail,
                 audio: song.audio,
-                created_at: song.create_at
-            }))
+                created_at: song.create_at,
+            })),
         };
         res.status(200).json({
             success: true,
             message: `Found ${songsData.length} songs in album "${album[0]?.title}"`,
-            data: response
+            ...response,
         });
     }
     catch (error) {
-        console.error('Error fetching songs by album:', error);
+        console.error("Error fetching songs by album:", error);
         res.status(500).json({
             success: false,
-            message: "Internal server error while fetching songs"
+            message: "Internal server error while fetching songs",
         });
     }
 });

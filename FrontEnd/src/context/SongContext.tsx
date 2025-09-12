@@ -27,9 +27,13 @@ export interface SongContextType{
     selectedSong:string | null;
     setSelectedSong:(id:string | null) => void;
     albums:Album[];
-    fetchSingleSong:() => Promise<void>
-    nextSong:() => void
-    prevSong:() => void
+    fetchSingleSong:() => Promise<void>;
+    nextSong:() => void;
+    prevSong:() => void;
+    albumSong:Song[];
+    albumData:Album | null;
+    fetchAlbumSong:(id:string) => Promise<void>;
+    songInPlaylist:Song[];
 }
 
 const  SongContext = createContext<SongContextType | undefined>(undefined)
@@ -45,6 +49,7 @@ export  const SongProvider:React.FC<SongProviderProps> = ({children}) => {
   const [selectedSong, setSelectedSong] = useState<string | null>(null);
   const [isplaying, setIsplaying] = useState<boolean>(false);
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [playlist, setPlaylist] = useState<Song[]>([]);
 
 
     const fetchSongs = useCallback(async () => {
@@ -53,12 +58,10 @@ export  const SongProvider:React.FC<SongProviderProps> = ({children}) => {
         try {
             const {data} = await axios.get<Song[]>(`${server}/api/v1/songs`)
             setSongs(data)
+            setPlaylist(data)
             setSelectedSong(data[0].id.toString())
             setIsplaying(false)
 
-            if(data.length > 0){
-
-            }
         } catch (error) {
             console.log(error);
         }finally {
@@ -75,12 +78,25 @@ export  const SongProvider:React.FC<SongProviderProps> = ({children}) => {
 
             const {data} = await  axios.get<Song>(`${server}/api/v1/song/${selectedSong}`)
 
-            setSong(data)
+            if (data) {
+                if (Array.isArray(data) && data.length > 0) {
+                    setSong(data[0]);
+                } else if (!Array.isArray(data)) {
+                    setSong(data as Song);
+                }
+            }
         } catch (error) {
             console.error(error);
         }
 
     },[selectedSong])
+
+    useEffect(() => {
+        if (selectedSong) {
+            fetchSingleSong();
+        }
+    }, [selectedSong, fetchSingleSong]);
+
     const fetchAlbums = useCallback(async  () => {
         setLoading(true)
         try {
@@ -96,29 +112,57 @@ export  const SongProvider:React.FC<SongProviderProps> = ({children}) => {
     },[])
 
     const [index , setIndex] = useState<number>(0);
+
+
     const prevSong = useCallback(async () => {
         if(index > 0){
             setIndex((prev) => prev - 1);
-            setSelectedSong(songs[index-1]?.id.toString());
+            setSelectedSong(playlist[index-1]?.id.toString());
         }
-    },[index, songs])
+    },[index, playlist])
+
+
+
 
     const nextSong = useCallback(async () => {
-        if(index === songs.length - 1){
+
+        if(index === playlist.length - 1){
             setIndex(0)
-            setSelectedSong(songs[0].id.toString())
+            setSelectedSong(playlist[0].id.toString())
         }else{
             setIndex((prevIndex) => prevIndex + 1)
-            setSelectedSong(songs[index+1]?.id.toString())
+            setSelectedSong(playlist[index+1]?.id.toString())
         }
-    },[index, songs])
+    },[index, playlist,selectedSong])
+
+    const [albumSong , setAlbumSong] = useState<Song[]>([])
+    const [albumData , setAlbumData] = useState<Album | null>(null)
+    const [songInPlaylist, setSongInPlaylist] = useState<Song[]>([]);
+
+    const fetchAlbumSong = useCallback(async  (id:string) => {
+        setLoading(true)
+        try {
+            const {data} = await  axios.get<{data:any,songs:Song[]; album:Album}>(`${server}/api/v1/album/${id}`)
+
+            setAlbumData(data.album)
+            setAlbumSong(data.songs)
+            setSongInPlaylist(data.songs)
+            setPlaylist(data.songs)
+        } catch (error) {
+            console.error(error);
+        }finally {
+            setLoading(false);
+        }
+
+    },[])
+
 
     useEffect(() => {
         fetchSongs()
         fetchAlbums()
     }, []);
     return(
-      <SongContext.Provider value={{songs , loading  ,isplaying , setIsplaying , selectedSong, setSelectedSong, albums, fetchSingleSong, song, prevSong , nextSong}}>
+      <SongContext.Provider value={{songs , loading  ,isplaying , setIsplaying , selectedSong, setSelectedSong, albums, fetchSingleSong, song, prevSong , nextSong, albumSong , albumData , fetchAlbumSong, songInPlaylist}}>
           {children}
       </SongContext.Provider>
   )

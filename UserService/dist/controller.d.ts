@@ -1,4 +1,9 @@
 export declare const RegisterUser: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
 export declare const LoginUser: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
 export declare const MyProfile: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
+export declare const registerUser: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
+export declare const loginUser: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
+export declare const myProfile: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
+export declare const addToPlaylist: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
+export declare const myPlaylist: (req: Request, res: Response, next: e.NextFunction) => Promise<void>;
 //# sourceMappingURL=controller.d.ts.map

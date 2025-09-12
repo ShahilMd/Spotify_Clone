@@ -7,7 +7,7 @@ body{
 }
 
 .volume-slider {
-    accent-color: darkgreen;
+    accent-color: lime;
 }
 .auth-input {
     @apply w-full p-3 bg-gray-800 rounded-md border border-gray-700 focus:outline-none focus:border-gray-500;
@@ -15,4 +15,43 @@ body{
 
 .auth-btn {
     @apply w-full bg-green-500 hover:bg-green-400 text-black font-semibold p-3 rounded-full cursor-pointer;
+}
+.volume-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #10b981;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #10b981;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+}
+
+.volume-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
 }

@@ -4,13 +4,16 @@ import "./index.css";
 import App from "./App.tsx";
 import { SongProvider } from "./context/SongContext.tsx";
 import { UserProvider } from "./context/UserContext.tsx";
+import { BrowserRouter } from "react-router-dom";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
-        <UserProvider>
-            <SongProvider>
-                <App />
-            </SongProvider>
-        </UserProvider>
+        <BrowserRouter>
+            <UserProvider>
+                <SongProvider>
+                    <App />
+                </SongProvider>
+            </UserProvider>
+        </BrowserRouter>
     </StrictMode>
 );

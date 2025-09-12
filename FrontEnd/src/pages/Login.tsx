@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {useuserData} from "../context/UserContext.tsx";
+import {useUserData} from "../context/UserContext.tsx";
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -8,7 +8,7 @@ const Login = () => {
 
     const navigate = useNavigate();
 
-    const { loginUser, btnLoading } = useuserData();
+    const { loginUser, btnLoading } = useUserData();
 
     async function submitHandler(e: any) {
         e.preventDefault();
@@ -49,7 +49,7 @@ const Login = () => {
                         />
                     </div>
 
-                    <button disabled={btnLoading} className="auth-btn">
+                    <button disabled={btnLoading} className={`auth-btn ${btnLoading ? "bg-gray-500" : ""}`}>
                         {btnLoading ? "Please Wait..." : "Login"}
                     </button>
                 </form>

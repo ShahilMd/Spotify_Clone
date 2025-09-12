@@ -171,9 +171,12 @@ export const addSong = TryCatch(async (req, res) => {
   `;
     if (redisClient.isReady) {
         await redisClient.del('songs');
+        await redisClient.del(`album:${album_id}`);
+        await redisClient.del(`songs:${album_id}`);
         console.log("cache clear for songs");
     }
     res.json({
+        isAlbum,
         message: "Song added",
         song: song[0]
     });
@@ -315,6 +318,12 @@ export const addSongs = TryCatch(async (req, res) => {
                 album_id: parseInt(album_id),
                 isNew: existingSong.length === 0
             });
+            if (redisClient.isReady) {
+                await redisClient.del('songs');
+                await redisClient.del(`album:${album_id}`);
+                await redisClient.del(`songs:${album_id}`);
+                console.log("cache clear for songs");
+            }
         }
         catch (error) {
             console.error(`Error processing song ${i + 1}:`, error);
@@ -342,10 +351,6 @@ export const addSongs = TryCatch(async (req, res) => {
     const statusCode = processedSongs.length > 0 ? 200 :
         errors.length > 0 ? 207 : // Multi-status for partial success
             400;
-    if (redisClient.isReady) {
-        await redisClient.del('songs');
-        console.log("cache clear for songs");
-    }
     res.status(statusCode).json(response);
 });
 export const addThumbnail = TryCatch(async (req, res) => {
@@ -414,6 +419,8 @@ export const deleteAlbum = TryCatch(async (req, res) => {
     }
     if (redisClient.isReady) {
         await redisClient.del(`songs`);
+        await redisClient.del(`album:${id}`);
+        await redisClient.del(`songs:${id}`);
         console.log("cache clear for songs");
     }
     res.json({
@@ -435,6 +442,13 @@ export const deleteSong = TryCatch(async (req, res) => {
         });
         return;
     }
+    const albumIds = await sql `SELECT * FROM albums`;
+    albumIds.map(async (album) => {
+        if (redisClient.isReady) {
+            await redisClient.del(`albums/${album.id}`);
+            await redisClient.del(`songs:${album.id}`);
+        }
+    });
     await sql `DELETE FROM songs WHERE id = ${id}`;
     if (redisClient.isReady) {
         await redisClient.del(`albums`);

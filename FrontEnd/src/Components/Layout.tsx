@@ -2,6 +2,7 @@ import Sidebar from "./Sidebar.tsx";
 import Navbar from "./Navbar.tsx";
 import  type {ReactNode} from "react";
 import React from "react";
+import Player from "./Player.tsx";
 
 interface LayoutProps {
     children: ReactNode;
@@ -16,9 +17,8 @@ const Layout:React.FC<LayoutProps> = ({children}) => {
                     <Navbar/>
                     {children}
                 </div>
-
             </div>
-
+            <Player/>
         </div>
     );
 }

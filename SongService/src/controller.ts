@@ -53,52 +53,55 @@ export const getAllSongs = TryCatch(async(req , res) => {
     return;
   }
 });
-
 export const getAllSongsByAlbum = TryCatch(async (req, res) => {
-  const { id } = req.params;
-  const cache_Expiry = 3600;
-  let album;
-  let songsData;
+    const { id } = req.params;
+    const cache_Expiry = 3600;
+    let album;
+    let songsData;
 
-  // Validate album ID
-  if (!id || isNaN(parseInt(id))) {
-    return res.status(400).json({
-      message: "Invalid album ID provided"
-    });
-  }
+    if (!id || isNaN(parseInt(id))) {
+        return res.status(400).json({
+            message: "Invalid album ID provided",
+        });
+    }
 
-  const albumId = parseInt(id);
-  // check if album is exist in redis or not
-  const cachedAlbum = await redisClient.get(`album:${albumId}`);
+    const albumId = parseInt(id);
 
-  if (cachedAlbum) {
-    album = JSON.parse(cachedAlbum);
-    
-  }else{
-   // check album is exist in db or not
-   
-   album = await sql`
-    SELECT id, title, discription, thumbnail, create_at 
-    FROM albums 
-    WHERE id = ${albumId}`;
+    if (redisClient.isReady) {
+        const cachedAlbum = await redisClient.get(`album:${albumId}`);
+        if (cachedAlbum) {
+            album = JSON.parse(cachedAlbum)
+        }
+    }
 
-    if(album.length === 0){
-      return res.status(404).json({
-        message:`Album with ID ${albumId} not found`
-      })
-    };
-    // cached album in redis
-    await redisClient.set(`album:${albumId}`, JSON.stringify(album),{EX:cache_Expiry});
-  }
+    if (!album) {
+        album = await sql`
+            SELECT id, title, discription, thumbnail, create_at
+            FROM albums
+            WHERE id = ${albumId}`;
 
-  // Fetch sall songs for the album with album information 
-  const cachedSongs = await redisClient.get(`songs:${albumId}`);
+        if (album.length === 0) {
+            return res.status(404).json({
+                message: `Album with ID ${albumId} not found`,
+            });
+        }
+        if (redisClient.isReady) {
+            await redisClient.set(`album:${albumId}`, JSON.stringify(album), {
+                EX: cache_Expiry,
+            });
+        }
+    }
 
-  if(cachedSongs){
-    songsData = JSON.parse(cachedSongs);
-  }else{
-    songsData = await sql`
-      SELECT 
+    if (redisClient.isReady) {
+        const cachedSongs = await redisClient.get(`songs:${albumId}`);
+        if (cachedSongs) {
+            songsData = JSON.parse(cachedSongs)
+        }
+    }
+
+    if (!songsData) {
+        songsData = await sql`
+      SELECT
         s.id,
         s.title,
         s.discription,
@@ -115,45 +118,53 @@ export const getAllSongsByAlbum = TryCatch(async (req, res) => {
       WHERE a.id = ${albumId}
       ORDER BY s.create_at ASC
     `;
-    // Cache songs in Redis
-      await redisClient.set(`songs:${albumId}`, JSON.stringify(songsData),{EX:cache_Expiry});
-  }
-  try {
+        if (redisClient.isReady) {
+            await redisClient.set(`songs:${albumId}`, JSON.stringify(songsData), {
+                EX: cache_Expiry,
+            });
+        }
+    }
 
-    // Format the response
-    const response = {
-      album: {
-        id: album[0]?.id,
-        title: album[0]?.title,
-        description: album[0]?.discription,
-        thumbnail: album[0]?.thumbnail,
-        created_at: album[0]?.create_at,
-        total_songs: songsData.length
-      },
-      songs: songsData.map((song: { id: number; title: string; discription: string; thumbnail: string; audio: string; create_at: string }) => ({
-        id: song.id,
-        title: song.title,
-        description: song.discription,
-        thumbnail: song.thumbnail,
-        audio: song.audio,
-        created_at: song.create_at
-      }))
-    };
+    try {
+        if (!album || album.length === 0 || !songsData) {
+            return res.status(404).json({
+                message: "Album or songs not found."
+            })
+        }
 
-    res.status(200).json({
-      success: true,
-      message: `Found ${songsData.length} songs in album "${album[0]?.title}"`,
-      data: response
-    });
+        const response = {
+            album: {
+                id: album[0]?.id,
+                title: album[0]?.title,
+                discription: album[0]?.discription,
+                thumbnail: album[0]?.thumbnail,
+                created_at: album[0]?.create_at,
+                total_songs: songsData.length,
+            },
+            songs: songsData.map((song) => ({
+                id: song.id,
+                title: song.title,
+                discription: song.discription,
+                thumbnail: song.thumbnail,
+                audio: song.audio,
+                created_at: song.create_at,
+            })),
+        };
 
-  } catch (error) {
-    console.error('Error fetching songs by album:', error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching songs"
-    });
-  }
+        res.status(200).json({
+            success: true,
+            message: `Found ${songsData.length} songs in album "${album[0]?.title}"`,
+            ...response,
+        });
+    } catch (error) {
+        console.error("Error fetching songs by album:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error while fetching songs",
+        });
+    }
 });
+
 
 
 

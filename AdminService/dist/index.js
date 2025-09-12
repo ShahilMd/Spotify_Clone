@@ -4,6 +4,7 @@ import { sql } from './config/db.js';
 import adminRoutes from './route.js';
 import cloudinary from 'cloudinary';
 import redis from 'redis';
+import cors from 'cors';
 dotenv.config({
     path: './.env'
 });
@@ -21,6 +22,7 @@ cloudinary.v2.config({
     api_secret: process.env.CLOUD_API_SECRET,
 });
 const app = express();
+app.use(cors());
 app.use(express.json());
 async function initDB() {
     try {

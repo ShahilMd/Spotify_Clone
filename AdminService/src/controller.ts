@@ -49,7 +49,7 @@ export const addAlbum = TryCatch(async(req:AuthenticatedRequest, res) => {
     }
 
     const fileBuffer = getBuffer(file);
-    
+
     if(!fileBuffer ||!fileBuffer.content){
       res.status(500).json({
         message:"Error uploading file"
@@ -68,7 +68,7 @@ export const addAlbum = TryCatch(async(req:AuthenticatedRequest, res) => {
     if(redisClient.isReady){
       await redisClient.del('albums');
       console.log("cache clear for albums");
-      
+
     }
 
     res.json({
@@ -123,14 +123,14 @@ export const addAlbums = TryCatch(async(req:AuthenticatedRequest, res) => {
     `;
     if(isExist.length > 0){
       errors.push(`Album ${title} already exists`);
-      continue;    
+      continue;
     }
 
     const fileBuffer = getBuffer(file)
 
     if(!fileBuffer || !fileBuffer.content){
       errors.push(`Error uploading thumbnail for album ${title}`);
-      continue;  
+      continue;
     }
     const cloud = await cloudinary.v2.uploader.upload(fileBuffer.content,{
       folder:'albums'
@@ -146,7 +146,7 @@ export const addAlbums = TryCatch(async(req:AuthenticatedRequest, res) => {
       if(redisClient.isReady){
       await redisClient.del('albums');
       console.log("cache clear for albums");
-      
+
     }
   res.json({
     message:'Albums Added',
@@ -218,13 +218,16 @@ export const addSong =  TryCatch(async(req:AuthenticatedRequest, res) => {
   VALUES (${album_id}, ${song?.[0]?.id})
   ON CONFLICT DO NOTHING
   `;
-  
+
   if(redisClient.isReady){
       await redisClient.del('songs');
+      await redisClient.del(`album:${album_id}`)
+      await redisClient.del(`songs:${album_id}`);
       console.log("cache clear for songs");
-      
+
     }
   res.json({
+      isAlbum,
     message:"Song added",
     song:song[0]
   })
@@ -261,14 +264,14 @@ export const addSongs = TryCatch(async (req: AuthenticatedRequest, res) => {
   }
 
   if (!Array.isArray(songs) || songs.length === 0) {
-    return res.status(400).json({ 
-      message: "Please provide a non-empty array of songs" 
+    return res.status(400).json({
+      message: "Please provide a non-empty array of songs"
     });
   }
 
   if (!Array.isArray(audios) || audios.length !== songs.length) {
-    return res.status(400).json({ 
-      message: "Number of audio files must match number of songs" 
+    return res.status(400).json({
+      message: "Number of audio files must match number of songs"
     });
   }
 
@@ -348,7 +351,7 @@ export const addSongs = TryCatch(async (req: AuthenticatedRequest, res) => {
       if (existingSong.length > 0) {
         // Song exists, use existing record
         songRecord = existingSong[0];
-        
+
         // Check if this song is already in the target album
         const albumSongExists = await sql`
           SELECT 1 FROM album_songs 
@@ -388,6 +391,12 @@ export const addSongs = TryCatch(async (req: AuthenticatedRequest, res) => {
         album_id: parseInt(album_id),
         isNew: existingSong.length === 0
       });
+        if(redisClient.isReady){
+            await redisClient.del('songs');
+            await redisClient.del(`album:${album_id}`)
+            await redisClient.del(`songs:${album_id}`);
+            console.log("cache clear for songs");
+        }
 
     } catch (error) {
       console.error(`Error processing song ${i + 1}:`, error);
@@ -416,15 +425,11 @@ export const addSongs = TryCatch(async (req: AuthenticatedRequest, res) => {
   }
 
   // Set appropriate status code
-  const statusCode = processedSongs.length > 0 ? 200 : 
+  const statusCode = processedSongs.length > 0 ? 200 :
                     errors.length > 0 ? 207 : // Multi-status for partial success
                     400;
-                    
-    if(redisClient.isReady){
-      await redisClient.del('songs');
-      console.log("cache clear for songs");
-      
-    }
+
+
 
   res.status(statusCode).json(response);
 });
@@ -446,7 +451,7 @@ export const addThumbnail = TryCatch(async(req:AuthenticatedRequest , res) => {
       message:"Please provide song_id and file"
     })
     return;
-  }  
+  }
   const isExist = await sql`
   SELECT * FROM songs WHERE id = ${id}
   `;
@@ -464,7 +469,7 @@ export const addThumbnail = TryCatch(async(req:AuthenticatedRequest , res) => {
     res.status(500).json({
       message: "Failed to generate file buffer"
     })
-    return; 
+    return;
   }
 
   const cloud = await cloudinary.v2.uploader.upload(fileBuffer.content)
@@ -513,6 +518,8 @@ export const deleteAlbum = TryCatch(async(req:AuthenticatedRequest , res) => {
   }
   if(redisClient.isReady){
     await redisClient.del(`songs`);
+      await redisClient.del(`album:${id}`);
+      await redisClient.del(`songs:${id}`);
     console.log("cache clear for songs");
   }
 
@@ -540,6 +547,14 @@ export const deleteSong = TryCatch(async(req:AuthenticatedRequest , res) => {
     })
     return;
   }
+
+  const albumIds = await sql`SELECT * FROM albums`;
+  albumIds.map(async (album) => {
+    if(redisClient.isReady){
+        await redisClient.del(`albums/${album.id}`);
+        await redisClient.del(`songs:${album.id}`);
+    }
+  });
 
   await sql`DELETE FROM songs WHERE id = ${id}`;
 
